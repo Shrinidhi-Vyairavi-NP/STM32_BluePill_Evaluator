@@ -1,0 +1,29 @@
+
+name: STM32 Project Evaluator
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_url:
+        description: "Public GitHub URL of the student's STM32 repository"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out evaluator
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Evaluate student repository
+        run: python evaluate.py "${{ inputs.repo_url }}"
