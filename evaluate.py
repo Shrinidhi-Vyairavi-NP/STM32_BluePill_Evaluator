@@ -1,5 +1,6 @@
 
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -21,9 +22,7 @@ def evaluate_project(project):
     passed = 0
 
     for item in REQUIRED_ITEMS:
-        item_path = project / item
-
-        if item_path.exists():
+        if (project / item).exists():
             print(f"[PASS] {item}")
             passed += 1
         else:
@@ -32,22 +31,24 @@ def evaluate_project(project):
     print("=" * 40)
     print(f"Result: {passed}/{len(REQUIRED_ITEMS)} checks passed")
 
-    if passed == len(REQUIRED_ITEMS):
-        print("Status: PASSED")
-        return True
-
-    print("Status: FAILED")
-    return False
+    success = passed == len(REQUIRED_ITEMS)
+    print(f"Status: {'PASSED' if success else 'FAILED'}")
+    return success
 
 
 def main():
-    repo_url = input(
-        "Enter the public GitHub repository URL: "
-    ).strip()
+    if len(sys.argv) >= 2:
+        repo_url = sys.argv[1].strip()
+    else:
+        repo_url = input(
+            "Enter the public GitHub repository URL: "
+        ).strip()
 
-    if not repo_url.startswith("https://github.com/"):
+    prefix = "https://github.com/"
+
+    if not repo_url.startswith(prefix):
         print("ERROR: Please enter a GitHub HTTPS URL.")
-        return
+        return False
 
     with tempfile.TemporaryDirectory() as temp_dir:
         download_path = Path(temp_dir) / "student_repo"
@@ -72,9 +73,8 @@ def main():
             print("=" * 40)
             print("[FAIL] Repository could not be downloaded.")
             print("Status: FAILED")
-            print("\nGit error:")
             print(result.stderr.strip())
-            return
+            return False
 
         print("Repository downloaded successfully.")
 
@@ -86,16 +86,14 @@ def main():
         if project_file is None:
             print("\nSTM32 Project Evaluation")
             print("=" * 40)
-            print("[FAIL] Debugging_Test_STM32.ioc")
             print("[FAIL] Expected STM32 project was not found.")
-            print("=" * 40)
             print(f"Result: 0/{len(REQUIRED_ITEMS)} checks passed")
             print("Status: FAILED")
-            return
+            return False
 
-        project_folder = project_file.parent
-        evaluate_project(project_folder)
+        return evaluate_project(project_file.parent)
 
 
 if __name__ == "__main__":
-    main()
+    if not main():
+        sys.exit(1)
